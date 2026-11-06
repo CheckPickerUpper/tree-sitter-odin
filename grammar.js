@@ -33,6 +33,17 @@ const PREC = {
   VARIADIC: 20,
 };
 
+/**
+ * A call argument, positional or after `name =`: any expression, or a type or procedure literal.
+ *
+ * @param {GrammarSymbols<string>} $
+ *
+ * @returns {ChoiceRule}
+ */
+function callArgument($) {
+  return choice($.expression, $.array_type, $.struct_type, $.pointer_type, $.procedure);
+}
+
 module.exports = grammar({
   name: 'odin',
 
@@ -631,8 +642,8 @@ module.exports = grammar({
       '(',
       optional(seq(
         commaSep1(seq(
-          field('argument', choice($.expression, $.array_type, $.struct_type, $.pointer_type, $.procedure)),
-          optional(seq('=', choice($.expression))),
+          field('argument', callArgument($)),
+          optional(seq('=', callArgument($))),
         )),
         optional(','),
       )),

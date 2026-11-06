@@ -987,7 +987,23 @@
       "required": false,
       "types": [
         {
+          "type": "array_type",
+          "named": true
+        },
+        {
           "type": "expression",
+          "named": true
+        },
+        {
+          "type": "pointer_type",
+          "named": true
+        },
+        {
+          "type": "procedure",
+          "named": true
+        },
+        {
+          "type": "struct_type",
           "named": true
         }
       ]

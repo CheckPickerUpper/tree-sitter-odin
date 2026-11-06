@@ -226,3 +226,34 @@ f :: proc() -> (n: int, ok: bool = false, m := 3) { return }
             (number))))
       (block
         (return_statement)))))
+
+====================
+Call argument: procedure literal after a name
+====================
+
+main :: proc() {
+	f(1, cb = proc(x: int) { y := x })
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (block
+        (call_expression
+          function: (identifier)
+          argument: (number)
+          argument: (identifier)
+          (procedure
+            (parameters
+              (parameter
+                (identifier)
+                (type
+                  (identifier))))
+            (block
+              (assignment_statement
+                (identifier)
+                (identifier)))))))))
