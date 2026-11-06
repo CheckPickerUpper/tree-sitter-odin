@@ -80,3 +80,149 @@ Build Tags
 
 (source_file
   (build_tag))
+
+====================
+Procedure result: single type
+====================
+
+f :: proc() -> int { return 1 }
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (identifier))
+      (block
+        (return_statement
+          (number))))))
+
+====================
+Procedure results: unnamed types
+====================
+
+f :: proc() -> (int, bool) { return 1, true }
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (tuple_type
+          (type
+            (identifier))
+          (type
+            (identifier))))
+      (block
+        (return_statement
+          (number)
+          (boolean))))))
+
+====================
+Procedure results: named types
+====================
+
+f :: proc() -> (a: int, b: bool) { return 1, true }
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (tuple_type
+          (named_type
+            (identifier)
+            (type
+              (identifier)))
+          (named_type
+            (identifier)
+            (type
+              (identifier)))))
+      (block
+        (return_statement
+          (number)
+          (boolean))))))
+
+====================
+Procedure results: names sharing a type
+====================
+
+f :: proc() -> (a, b: int) { return 1, 2 }
+
+g :: proc() -> (a, b, c: int, ok: bool) { return }
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (tuple_type
+          (named_type
+            (identifier)
+            (identifier)
+            (type
+              (identifier)))))
+      (block
+        (return_statement
+          (number)
+          (number)))))
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (tuple_type
+          (named_type
+            (identifier)
+            (identifier)
+            (identifier)
+            (type
+              (identifier)))
+          (named_type
+            (identifier)
+            (type
+              (identifier)))))
+      (block
+        (return_statement)))))
+
+====================
+Procedure results: defaults
+====================
+
+f :: proc() -> (n: int, ok: bool = false, m := 3) { return }
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (tuple_type
+          (named_type
+            (identifier)
+            (type
+              (identifier)))
+          (named_type
+            (identifier)
+            (type
+              (identifier))
+            (boolean))
+          (default_type
+            (identifier)
+            (number))))
+      (block
+        (return_statement)))))

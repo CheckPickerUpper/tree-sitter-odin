@@ -41,6 +41,9 @@ module.exports = grammar({
     [$.array_type],
     // lol: size_of(Map_Cell(T){}.data) / size_of(T) when size_of(T) > 0 else 1
     [$._expression_no_tag, $.struct],
+    // `(int, bool)` and `(a, b: int)` share the prefix `(identifier ,`
+    [$.type, $._tuple_identifier, $.named_type],
+    [$.type, $._tuple_identifier],
   ],
 
   externals: $ => [
@@ -760,11 +763,19 @@ module.exports = grammar({
     tuple_type: $ => seq(
       '(',
       optional(seq(
-        commaSep1(choice($.type, $.named_type, $.default_type)),
+        choice(
+          // Odin does not mix unnamed and named entries in one tuple.
+          commaSep1(choice($.type, alias($._tuple_identifier, $.type))),
+          commaSep1(choice($.named_type, $.default_type)),
+        ),
         optional(','),
       )),
       ')',
     ),
+
+    // Without associativity, so after `(identifier ,` the parser keeps both
+    // `(int, bool)` and `(a, b: int)` until the `:` or `)` decides.
+    _tuple_identifier: $ => $.identifier,
 
     struct_type: $ => prec(1, seq(
       'struct',
