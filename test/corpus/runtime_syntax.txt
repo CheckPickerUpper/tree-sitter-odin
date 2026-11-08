@@ -1,0 +1,387 @@
+====================
+Field type: procedure with a calling convention
+====================
+
+Map_Info :: struct {
+	key_equal: proc "contextless" (lhs, rhs: rawptr) -> bool,
+	key_hasher: proc "contextless" (key: rawptr, seed: uintptr) -> uintptr,
+}
+
+---
+
+(source_file
+  (struct_declaration
+    (identifier)
+    (field
+      (identifier)
+      (type
+        (procedure_type
+          (calling_convention)
+          (parameters
+            (parameter
+              (identifier)
+              (identifier)
+              (type
+                (identifier))))
+          (type
+            (identifier)))))
+    (field
+      (identifier)
+      (type
+        (procedure_type
+          (calling_convention)
+          (parameters
+            (parameter
+              (identifier)
+              (type
+                (identifier)))
+            (parameter
+              (identifier)
+              (type
+                (identifier))))
+          (type
+            (identifier)))))))
+
+====================
+Array type: dynamic with a fixed capacity
+====================
+
+clear_fixed :: proc(array: ^$D/[dynamic; $N]$E) {
+	buffer: [dynamic; 8]int
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters
+        (parameter
+          (identifier)
+          (type
+            (pointer_type
+              (type
+                (constant_type
+                  (type
+                    (specialized_type
+                      (type
+                        (identifier))
+                      (type
+                        (array_type
+                          (identifier)
+                          (type
+                            (constant_type
+                              (type
+                                (identifier))))))))))))))
+      (block
+        (var_declaration
+          (identifier)
+          (type
+            (array_type
+              (number)
+              (type
+                (identifier)))))))))
+
+====================
+Procedure group: entry with a where condition
+====================
+
+clear :: proc{
+	clear_dynamic_array,
+	clear_map where MAP_ENABLED,
+}
+
+---
+
+(source_file
+  (overloaded_procedure_declaration
+    (identifier)
+    (identifier)
+    (identifier)
+    (where_clause
+      (identifier))))
+
+====================
+Variable declaration: type left to the value
+====================
+
+f :: proc() {
+	sd: = N - 1
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (block
+        (var_declaration
+          (identifier)
+          (binary_expression
+            (identifier)
+            (number)))))))
+
+====================
+Struct declaration: alignment from an expression
+====================
+
+Buddy_Block :: struct #align(align_of(uint)) {
+	size: uint,
+}
+
+---
+
+(source_file
+  (struct_declaration
+    (identifier)
+    (tag)
+    (parenthesized_expression
+      (call_expression
+        (identifier)
+        (identifier)))
+    (field
+      (identifier)
+      (type
+        (identifier)))))
+
+====================
+Literal: simd vector
+====================
+
+f :: proc() -> #simd[4]i32 {
+	return #simd[4]i32{1, 2, 3, 4}
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (type
+        (array_type
+          (tag)
+          (number)
+          (type
+            (identifier))))
+      (block
+        (return_statement
+          (struct
+            (tag)
+            (number)
+            (type
+              (identifier))
+            (struct_field
+              (number))
+            (struct_field
+              (number))
+            (struct_field
+              (number))
+            (struct_field
+              (number))))))))
+
+====================
+Polymorphic parameters: default value
+====================
+
+Chan :: struct($T: typeid, $D: Direction = Direction.Both) {
+	impl: ^Raw_Chan,
+}
+
+---
+
+(source_file
+  (struct_declaration
+    (identifier)
+    (polymorphic_parameters
+      (identifier)
+      (type
+        (identifier))
+      (identifier)
+      (type
+        (identifier))
+      (member_expression
+        (identifier)
+        (identifier)))
+    (field
+      (identifier)
+      (type
+        (pointer_type
+          (type
+            (identifier)))))))
+
+====================
+Polymorphic type: implicit selector argument
+====================
+
+as_send :: proc(c: $C/Chan($T, $D)) -> (s: Chan(T, .Send)) {
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters
+        (parameter
+          (identifier)
+          (type
+            (constant_type
+              (type
+                (specialized_type
+                  (type
+                    (identifier))
+                  (type
+                    (polymorphic_type
+                      (type
+                        (identifier))
+                      (type
+                        (constant_type
+                          (type
+                            (identifier))))
+                      (type
+                        (constant_type
+                          (type
+                            (identifier))))))))))))
+      (type
+        (tuple_type
+          (named_type
+            (identifier)
+            (type
+              (polymorphic_type
+                (type
+                  (identifier))
+                (type
+                  (identifier))
+                (member_expression
+                  (identifier)))))))
+      (block))))
+
+====================
+For statement: iteration after a statement
+====================
+
+f :: proc() {
+	for first := true; key, value in m {
+		first = false
+	}
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (block
+        (for_statement
+          (assignment_statement
+            (identifier)
+            (boolean))
+          (identifier)
+          (identifier)
+          (identifier)
+          (block
+            (assignment_statement
+              (identifier)
+              (boolean))))))))
+
+====================
+Defer statement: tagged statement
+====================
+
+f :: proc() {
+	defer #no_bounds_check for i in 0 ..< n {
+	}
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters)
+      (block
+        (defer_statement
+          (tag)
+          (for_statement
+            (identifier)
+            (range_expression
+              (number)
+              (identifier))
+            (block)))))))
+
+====================
+Number: digit separators after the base
+====================
+
+O_CREAT :: 0o0_000_100
+PATH :: 0o_10000000
+MASK :: 0b_1010
+
+---
+
+(source_file
+  (const_declaration
+    (identifier)
+    (number))
+  (const_declaration
+    (identifier)
+    (number))
+  (const_declaration
+    (identifier)
+    (number)))
+
+====================
+Comparison: a type compared in where and when
+====================
+
+encode :: proc(dst: $T) where T == io.Writer || T == []byte {
+	when T == []byte {
+		n := 1
+	}
+}
+
+---
+
+(source_file
+  (procedure_declaration
+    (identifier)
+    (procedure
+      (parameters
+        (parameter
+          (identifier)
+          (type
+            (constant_type
+              (type
+                (identifier))))))
+      (where_clause
+        (binary_expression
+          (binary_expression
+            (identifier)
+            (member_expression
+              (identifier)
+              (identifier)))
+          (binary_expression
+            (identifier)
+            (array_type
+              (type
+                (identifier))))))
+      (block
+        (when_statement
+          (binary_expression
+            (identifier)
+            (array_type
+              (type
+                (identifier))))
+          (block
+            (assignment_statement
+              (identifier)
+              (number))))))))

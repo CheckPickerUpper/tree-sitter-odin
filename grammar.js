@@ -147,7 +147,8 @@ module.exports = grammar({
       optional(seq(
         '->',
         optional($.tag),
-        choice($.type, $.named_type),
+        // Named results need parentheses, `-> (ok: bool)`, which is a tuple_type.
+        $.type,
         optional($.tag),
       )),
       optional($.where_clause),
@@ -177,11 +178,14 @@ module.exports = grammar({
       'proc',
       '{',
       optional(seq(
-        commaSep1($.expression),
+        commaSep1(seq($.expression, optional(alias($._procedure_group_condition, $.where_clause)))),
         optional(','),
       )),
       '}',
     ),
+
+    // `clear_map where MAP_ENABLED`: a group entry held only while its condition holds.
+    _procedure_group_condition: $ => seq('where', $.expression),
 
     struct_declaration: $ => seq(
       optional($.attributes),
@@ -189,7 +193,7 @@ module.exports = grammar({
       '::',
       'struct',
       optional($.polymorphic_parameters),
-      repeat(seq($.tag, optional(choice($.identifier, $.number)))), // #align 16
+      repeat(seq($.tag, optional(choice($.identifier, $.number, $.parenthesized_expression)))), // #align 16, #align(align_of(uint))
       optional($.where_clause),
       '{',
       optional(seq(
@@ -345,6 +349,7 @@ module.exports = grammar({
         commaSep1(seq(optional('$'), $.identifier)),
         ':',
         $.type,
+        optional(seq('=', $.expression)),
       )),
       ')',
     ),
@@ -473,7 +478,14 @@ module.exports = grammar({
             ),
           )),
         ),
-        $._for_in_expression,
+        // `for first := true; key, value in m`, an iteration with a statement before it.
+        seq(
+          optional(seq(
+            field('initializer', choice($.assignment_statement, $.update_statement, $.var_declaration)),
+            ';',
+          )),
+          $._for_in_expression,
+        ),
       )),
       field('consequence', choice($.block, seq('do', $.statement))),
     ),
@@ -511,7 +523,7 @@ module.exports = grammar({
       sep(seq(optional($.tag), $.statement), $._separator),
     ),
 
-    defer_statement: $ => seq('defer', $.statement),
+    defer_statement: $ => seq('defer', optional($.tag), $.statement),
 
     break_statement: $ => seq('break', optional($.identifier)),
 
@@ -526,7 +538,8 @@ module.exports = grammar({
       optional($.tag),
       choice(
         seq($.type, optional(seq(choice('=', ':'), commaSep1($.expression)))),
-        // seq('=', $.expression), // +2k state count no ty
+        // `x: = v` leaves the type to the value, as `x := v` does.
+        seq('=', commaSep1($.expression)),
       ),
     )),
 
@@ -614,7 +627,8 @@ module.exports = grammar({
           field('left', $.expression),
           // @ts-ignore
           field('operator', operator),
-          field('right', $.expression),
+          // `T == []byte`: a type compares as a value in `when` and `where`.
+          field('right', ['==', '!='].includes(operator) ? choice($.expression, $.array_type) : $.expression),
         ));
       }));
     },
@@ -740,9 +754,13 @@ module.exports = grammar({
     variadic_type: $ => prec.left(seq('..', $.type)),
 
     array_type: $ => prec(1, seq(
-      optional($.tag),
+      optional(choice($.tag, alias('#simd', $.tag))),
       '[',
-      optional(seq(optional('$'), choice('dynamic', '^', '?', $.expression))),
+      optional(choice(
+        seq(optional('$'), choice('dynamic', '^', '?', $.expression)),
+        // `[dynamic; N]E`, a dynamic array with a fixed capacity.
+        seq('dynamic', ';', optional('$'), $.expression),
+      )),
       ']',
       optional($.type),
     )),
@@ -791,7 +809,7 @@ module.exports = grammar({
     struct_type: $ => prec(1, seq(
       'struct',
       optional($.polymorphic_parameters),
-      repeat(seq($.tag, optional($.number))), // #align 16
+      repeat(seq($.tag, optional(choice($.number, $.parenthesized_expression)))), // #align 16, #align(align_of(uint))
       repeat1(seq(
         '{',
         optional($._struct_members),
@@ -845,7 +863,10 @@ module.exports = grammar({
 
     empty_type: _ => '!',
 
-    polymorphic_type: $ => seq($.type, '(', commaSep1(choice($.type, $.literal)), ')'),
+    // `Chan(T, .Send)` passes an enum member by its implicit selector.
+    polymorphic_type: $ => seq($.type, '(', commaSep1(choice($.type, $.literal, alias($._implicit_selector, $.member_expression))), ')'),
+
+    _implicit_selector: $ => seq('.', $.identifier),
 
     conditional_type: $ => seq('(', $.type, 'when', $.expression, 'else', $.type, ')'),
 
@@ -865,7 +886,8 @@ module.exports = grammar({
 
     struct: $ => seq(
       optional(choice(
-        seq('[', optional(choice('dynamic', '^', '?', $.expression)), ']', $.type),
+        // `#simd[4]f32{...}` names a vector of the array type.
+        seq(optional(alias('#simd', $.tag)), '[', optional(choice('dynamic', '^', '?', $.expression)), ']', $.type),
         seq(choice($.identifier, $.field_identifier), optional(seq('(', commaSep($.identifier), ')'))),
       )),
       // $.type,
@@ -932,8 +954,8 @@ module.exports = grammar({
     number: _ => {
       const decimal = /[0-9][0-9_]*[ijk]?/;
       const hex = /0[xh][0-9a-fA-F_]+[ijk]?/;
-      const octal = /0o[0-7][0-7]*[ijk]?/;
-      const binary = /0b[01][01_]*[ijk]?/;
+      const octal = /0o[0-7_]+[ijk]?/;
+      const binary = /0b[01_]+[ijk]?/;
       // no float
 
       return token(choice(
