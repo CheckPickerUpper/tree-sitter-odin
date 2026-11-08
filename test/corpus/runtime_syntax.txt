@@ -151,8 +151,8 @@ Buddy_Block :: struct #align(align_of(uint)) {
 Literal: simd vector
 ====================
 
-f :: proc() -> #simd[4]i32 {
-	return #simd[4]i32{1, 2, 3, 4}
+f :: proc() -> V {
+	return transmute(V)#simd[4]i32{1, 2, 3, 4}
 }
 
 ---
@@ -163,26 +163,25 @@ f :: proc() -> #simd[4]i32 {
     (procedure
       (parameters)
       (type
-        (array_type
-          (tag)
-          (number)
-          (type
-            (identifier))))
+        (identifier))
       (block
         (return_statement
-          (struct
-            (tag)
-            (number)
+          (cast_expression
             (type
               (identifier))
-            (struct_field
-              (number))
-            (struct_field
-              (number))
-            (struct_field
-              (number))
-            (struct_field
-              (number))))))))
+            (struct
+              (tag)
+              (number)
+              (type
+                (identifier))
+              (struct_field
+                (number))
+              (struct_field
+                (number))
+              (struct_field
+                (number))
+              (struct_field
+                (number)))))))))
 
 ====================
 Polymorphic parameters: default value
